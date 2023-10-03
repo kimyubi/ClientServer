@@ -1,0 +1,4 @@
+# 프로젝트 제외 경로
+/Homework3_Authentication_RMI_Client2/.gradle/
+/Homework3_Authentication_RMI_Client2/build/
+/Homework3_Authentication_RMI_Client2/build/classes/java/main/

@@ -7,20 +7,24 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 	private MemberRepository memberRepository;
 	private StudentRepository studentRepository;
 	private CourseRepository courseRepository;
+	private EnrolmentRepository enrolmentRepository;
 
 	// Student
 
@@ -40,11 +44,12 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 
 	// 초기화
 	@Autowired
-	public RmiServer(MemberRepository memberRepository, StudentRepository studentRepository, CourseRepository courseRepository) throws RemoteException {
+	public RmiServer(MemberRepository memberRepository, StudentRepository studentRepository, CourseRepository courseRepository, EnrolmentRepository enrolmentRepository) throws RemoteException {
 		super();
 		this.memberRepository = memberRepository;
 		this.studentRepository = studentRepository;
 		this.courseRepository = courseRepository;
+		this.enrolmentRepository = enrolmentRepository;
 	}
 
 	// 회원 가입 & 로그인
@@ -208,7 +213,116 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 		return sb.toString();
 	}
 
+	@Override
+	public String addStudent(CreateStudentDto dto) throws RemoteException, IOException {
+		Student student = Student.builder()
+			.studentNumber(dto.getStudentNumber())
+			.name(dto.getName())
+			.department(dto.getDepartment())
+			.completedCoursesList(dto.getCompletedCoursesList())
+			.build();
 
+		Student savedStudent = studentRepository.save(student);
+		if (savedStudent.getStudentNumber().equals(student.getStudentNumber())){
+			String result = "\n 아래의 학생 정보를 학생 목록에 추가하였습니다. \n";
+			result += convertStudentToString(savedStudent);
+			return result;
+		}
 
+		return "학생 추가에 실패하였습니다. 다시 시도해주세요.";
+	}
+
+	@Override
+	public String deleteStudent(String studentNumber) throws RemoteException, IOException {
+		Optional<Student> optionalStudent = studentRepository.findByStudentNumber(studentNumber);
+		if (optionalStudent.isPresent()){
+			studentRepository.delete(optionalStudent.get());
+			return studentNumber + " 학번을 가진 학생을 성공적으로 삭제하였습니다.";
+		}
+
+		return studentNumber + " 학번을 가진 학생은 존재하지 않으므로, 학생 목록에서 삭제할 수 없습니다. 삭제하려는 학생의 학번을 올바르게 입력해주세요.";
+	}
+
+	@Override
+	public String addCourse(CreateCourseDto dto) throws RemoteException, IOException {
+		Course course = Course.builder()
+			.courseNumber(dto.getCourseNumber())
+			.professor(dto.getProfessor())
+			.name(dto.getName())
+			.prerequisiteSubjectList(dto.getPrerequisiteSubjectList())
+			.build();
+
+		Course savedCourse = courseRepository.save(course);
+		if (savedCourse.getCourseNumber().equals(course.getCourseNumber())){
+			String result = "\n 아래의 강의 정보를 강의 목록에 추가하였습니다. \n";
+			result += convertCourseToString(savedCourse);
+			return result;
+		}
+
+		return "강의 추가에 실패하였습니다. 다시 시도해주세요.";
+	}
+
+	@Override
+	public String deleteCourse(String courseNumber) throws RemoteException, IOException {
+		Optional<Course> optionalCourse = courseRepository.findByCourseNumber(courseNumber);
+		if (optionalCourse.isPresent()){
+			Course removedCourse = optionalCourse.get();
+			courseRepository.delete(removedCourse);
+			return "과목 코드 " +  courseNumber + "의 [ " + removedCourse.getName() + " ] 강의를 성공적으로 삭제하였습니다.";
+		}
+
+		return "과목 코드 " + courseNumber + "에 해당하는 강의는 존재하지 않으므로, 강의 목록에서 삭제할 수 없습니다. 삭제하려는 강의의 과목 코드를 올바르게 입력해주세요.";
+	}
+
+	@Override
+	public String enrolment(String studentNumber, String courseNumber) throws RemoteException, IOException {
+		Optional<Student> optionalStudent = studentRepository.findByStudentNumber(studentNumber);
+		if(!optionalStudent.isPresent()){
+			return "학번 " + studentNumber + "에 해당하는 학생이 존재하지 않습니다. 올바른 학번을 입력해주세요. \n";
+		}
+		Student student = optionalStudent.get();
+
+		Optional<Course> optionalCourse = courseRepository.findByCourseNumber(courseNumber);
+		if(!optionalCourse.isPresent()){
+			return "과목 코드 " + courseNumber + "에 해당하는 강의가 존재하지 않습니다. 올바른 과목 코드를 입력해주세요. \n";
+		}
+		Course course = optionalCourse.get();
+
+		// 선수 과목이 있다면, 학생이 모든 선수 과목을 이미 수강 완료한 경우에만 수강 신청이 가능하다.
+		Set<String> completedCoursesList = new HashSet<>(student.getCompletedCoursesList());
+		Set<String> prerequisiteSubjectList = new HashSet<>(course.getPrerequisiteSubjectList());
+		// 선수 과목이 있는 경우
+		if(!prerequisiteSubjectList.isEmpty()){
+			prerequisiteSubjectList.removeAll(completedCoursesList);
+			// 학생이 모든 선수 과목을 이미 수강 완료하여 수강 신청에 성공하는 경우
+			if(prerequisiteSubjectList.isEmpty()){
+				return enrolmentProcess(student, course);
+			}
+			// 학생이 수강 신청하려는 과목의 선수 과목을 수강하지 않아 수강 신청에 실패하는 경우
+			else{
+				return student.getName() + " 학생은 " + course.getName() + "의 선수 과목인 " + prerequisiteSubjectList + "(을)를 수강 완료하지 않아 해당 과목의 수강 신청에 실패하였습니다.";
+			}
+		}
+		// 선수 과목이 없는 경우
+		else{
+			return enrolmentProcess(student, course);
+		}
+	}
+
+	private String enrolmentProcess(Student student, Course course) {
+		// 이미 수강 신청한 과목이라면 수강 신청에 실패한다.
+		Optional<Enrolment> optionalEnrolment = enrolmentRepository.findByStudentNumberAndCourseNumber(student.getStudentNumber(), course.getCourseNumber());
+		if(optionalEnrolment.isPresent()){
+			return student.getName() + " 학생은 " + course.getName() + " 강의를 이미 수강 신청하였으므로, 중복 수강 신청이 불가능합니다.";
+		}
+
+		// 이미 수강 신청한 과목이 아니라면 수강 신청에 성공한다.
+		Enrolment enrolment = Enrolment.builder()
+			.studentNumber(student.getStudentNumber())
+			.courseNumber(course.getCourseNumber())
+			.build();
+		enrolmentRepository.save(enrolment);
+		return "[" + student.getName() + " ] 학생이 [ " + course.getName() + " ] 강의를 성공적으로 수강 신청하였습니다.";
+	}
 
 }

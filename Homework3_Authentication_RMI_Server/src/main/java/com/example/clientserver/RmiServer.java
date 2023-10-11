@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class RmiServer extends UnicastRemoteObject implements RMIInterface {
@@ -278,13 +278,13 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 	public String enrolment(String studentNumber, String courseNumber) throws RemoteException, IOException {
 		Optional<Student> optionalStudent = studentRepository.findByStudentNumber(studentNumber);
 		if(!optionalStudent.isPresent()){
-			return "학번 " + studentNumber + "에 해당하는 학생이 존재하지 않습니다. 올바른 학번을 입력해주세요. \n";
+			return "학번 [ " + studentNumber + " ] 에 해당하는 학생이 존재하지 않습니다. 올바른 학번을 입력해주세요. \n";
 		}
 		Student student = optionalStudent.get();
 
 		Optional<Course> optionalCourse = courseRepository.findByCourseNumber(courseNumber);
 		if(!optionalCourse.isPresent()){
-			return "과목 코드 " + courseNumber + "에 해당하는 강의가 존재하지 않습니다. 올바른 과목 코드를 입력해주세요. \n";
+			return "과목 코드 [ " + courseNumber + " ] 에 해당하는 강의가 존재하지 않습니다. 올바른 과목 코드를 입력해주세요. \n";
 		}
 		Course course = optionalCourse.get();
 
@@ -300,7 +300,7 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 			}
 			// 학생이 수강 신청하려는 과목의 선수 과목을 수강하지 않아 수강 신청에 실패하는 경우
 			else{
-				return student.getName() + " 학생은 " + course.getName() + "의 선수 과목인 " + prerequisiteSubjectList + "(을)를 수강 완료하지 않아 해당 과목의 수강 신청에 실패하였습니다.";
+				return "[ " +student.getName() + " ] 학생은 " + course.getName() + "의 선수 과목인 [ " + prerequisiteSubjectList + "] (을)를 수강 완료하지 않아 해당 과목의 수강 신청에 실패하였습니다.";
 			}
 		}
 		// 선수 과목이 없는 경우
@@ -313,7 +313,8 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 		// 이미 수강 신청한 과목이라면 수강 신청에 실패한다.
 		Optional<Enrolment> optionalEnrolment = enrolmentRepository.findByStudentNumberAndCourseNumber(student.getStudentNumber(), course.getCourseNumber());
 		if(optionalEnrolment.isPresent()){
-			return student.getName() + " 학생은 " + course.getName() + " 강의를 이미 수강 신청하였으므로, 중복 수강 신청이 불가능합니다.";
+			return "[ "+ student.getName() + " ] 학생은 [ " + course.getName() + " ] 강의를 이미 수강 신청하였으므로, 중복 수강 신청이 불가능합니다.";
+
 		}
 
 		// 이미 수강 신청한 과목이 아니라면 수강 신청에 성공한다.
@@ -322,7 +323,35 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 			.courseNumber(course.getCourseNumber())
 			.build();
 		enrolmentRepository.save(enrolment);
-		return "[" + student.getName() + " ] 학생이 [ " + course.getName() + " ] 강의를 성공적으로 수강 신청하였습니다.";
+		return "[ " + student.getName() + " ] 학생이 [ " + course.getName() + " ] 강의를 성공적으로 수강 신청하였습니다.";
 	}
 
+	@Override
+	public String printEnrolmentByStudentNumber(String studentNumber) throws RemoteException {
+		Optional<Student> optionalStudent = studentRepository.findByStudentNumber(studentNumber);
+		if(!optionalStudent.isPresent()){
+			return "학번 [ " + studentNumber + " ] 에 해당하는 학생이 존재하지 않습니다. 올바른 학번을 입력해주세요. \n";
+		}
+		Student student = optionalStudent.get();
+
+		List<Enrolment> enrolmentList = enrolmentRepository.findAllByStudentNumber(studentNumber);
+		if (enrolmentList.isEmpty()){
+			return "학번 [ " + studentNumber + " ] 에 해당하는 학생의 수강 신청 내역이 존재하지 않습니다. \n => 신청 과목 수 : [ 0 ]";
+		}
+		else{
+			List<Course> courseList = new ArrayList<>();
+			for(Enrolment enrolment : enrolmentList){
+				courseList.add(courseRepository.findByCourseNumber(enrolment.getCourseNumber()).get());
+			}
+
+			String title = "================ 학번 [ " + studentNumber + " ] 에 해당하는 학생의 수강 신청 내역 ================\n";
+			title +=  " => 신청 과목 수 : [ " + courseList.size() + " ] \n";
+
+			List<String> result = courseList.stream()
+				.map(this::convertCourseToString)
+				.collect(Collectors.toList());
+
+			return title + result;
+		}
+	}
 }

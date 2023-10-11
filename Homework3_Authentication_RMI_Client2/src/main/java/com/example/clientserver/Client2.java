@@ -2,6 +2,7 @@ package com.example.clientserver;
 
 import java.io.IOException;
 import java.rmi.Naming;
+import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -45,6 +46,9 @@ public class Client2 {
 					case 9:
 						enrolment(scanner, rmiInterface);
 						break;
+					case 10:
+						printEnrolmentByStudentNumber(scanner, rmiInterface);
+						break;
 					default:
 						System.out.println("잘못 입력하셨습니다.");
 						break;
@@ -53,6 +57,16 @@ public class Client2 {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private static void printEnrolmentByStudentNumber(Scanner scanner, RMIInterface rmiInterface) throws
+		RemoteException {
+		System.out.println("================ [수강 신청 내역 확인] ================");
+		System.out.println("학번을 입력하세요.");
+		String studentNumber = scanner.next();
+
+		String result = rmiInterface.printEnrolmentByStudentNumber(studentNumber);
+		System.out.println(result);
 	}
 
 	private static void enrolment(Scanner scanner, RMIInterface rmiInterface) throws IOException {
@@ -195,5 +209,7 @@ public class Client2 {
 		System.out.println("7. 강의 추가");
 		System.out.println("8. 강의 삭제");
 		System.out.println("9. 수강 신청");
+		System.out.println("10. 수강 신청 내역 확인");
+
 	}
 }

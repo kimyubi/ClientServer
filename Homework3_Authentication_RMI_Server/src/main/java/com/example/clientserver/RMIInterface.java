@@ -26,4 +26,7 @@ public interface RMIInterface extends Remote {
 	String addCourse(CreateCourseDto dto) throws RemoteException, IOException;
 	String deleteCourse(String courseNumber) throws RemoteException, IOException;
 	String enrolment(String studentNumber, String courseNumber) throws RemoteException, IOException;
+
+	String printEnrolmentByStudentNumber(String studentNumber)throws RemoteException;
+
 }

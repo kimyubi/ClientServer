@@ -52,16 +52,17 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 		this.enrolmentRepository = enrolmentRepository;
 	}
 
-	// 회원 가입 & 로그인
+	private void writeAuthenticationLog(String log) throws IOException {
+		FileWriter writer = new FileWriter("log.txt", true);
+		writer.write(log);
+		writer.close();
+	}
+	// 회원 가입
 	@Override
 	public String signUp(String memberId, String pwd, String name) throws IOException {
-		FileWriter writer = new FileWriter("log.txt", true);
-
 		Optional<Member> member = memberRepository.findByMemberId(memberId);
 		if (member.isPresent()){
-			writer.write("[사용자 아이디] : " + memberId + " [Command]  : 회원 가입 "  + " [Result] : 실패[id 중복] " + " [Time] : " + LocalDateTime.now() + "\n");
-
-			writer.close();
+			writeAuthenticationLog("[사용자 아이디] : " + memberId + " [Command]  : 회원 가입 "  + " [Result] : 실패[id 중복] " + " [Time] : " + LocalDateTime.now() + "\n");
 			return memberId + "는 이미 존재하는 id 입니다. 다른 id로 회원가입해주세요.";
 		}
 
@@ -73,31 +74,23 @@ public class RmiServer extends UnicastRemoteObject implements RMIInterface {
 
 		Member savedMember = memberRepository.save(newMember);
 
-		writer.write("[사용자 아이디] : " + memberId + " [Command]  : 회원 가입 "  + " [Result] : 성공 " + " [Time] : " + LocalDateTime.now() + "\n");
-		writer.close();
+		writeAuthenticationLog("[사용자 아이디] : " + memberId + " [Command]  : 회원 가입 "  + " [Result] : 성공 " + " [Time] : " + LocalDateTime.now() + "\n");
 		return savedMember.getName() + "님 회원가입 되었습니다.";
 	}
 
+	// 로그인
 	@Override
 	public String login(String memberId, String pwd) throws IOException {
-		FileWriter writer = new FileWriter("log.txt", true);
-
 		Optional<Member> member = memberRepository.findByMemberId(memberId);
 		if (member.isPresent()){
 			Member loginMember = member.get();
 			if (loginMember.getPassword().equals(pwd)){
-				writer.write("[사용자 아이디] : " + memberId + " [Command]  : 로그인 "  + " [Result] : 실패[id 중복] " + " [Time] : " + LocalDateTime.now() + "\n");
-
-				writer.close();
-
+				writeAuthenticationLog("[사용자 아이디] : " + memberId + " [Command]  : 로그인 "  + " [Result] : 실패[id 중복] " + " [Time] : " + LocalDateTime.now() + "\n");
 				return loginMember.getName() + "님 환영합니다.";
-
 			}
 		}
 
-		writer.write("[사용자 아이디] : " + memberId + " [Command]  : 로그인 "  + " 실패[유효하지 않은 아이디와 패스워드] " + " [Time] : " + LocalDateTime.now() + "\n");
-		writer.close();
-
+		writeAuthenticationLog("[사용자 아이디] : " + memberId + " [Command]  : 로그인 "  + " 실패[유효하지 않은 아이디와 패스워드] " + " [Time] : " + LocalDateTime.now() + "\n");
 		return "로그인에 실패하였습니다. 아이디와 비밀번호를 다시 확인해주세요.";
 	}
 

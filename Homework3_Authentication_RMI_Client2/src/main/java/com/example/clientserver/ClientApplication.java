@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Client2 {
+public class ClientApplication {
 	public static void main(String[] args) {
 		try {
 			Scanner scanner = new Scanner(System.in);

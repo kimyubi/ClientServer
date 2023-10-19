@@ -15,12 +15,12 @@ public class RmiServerApplication {
 			RmiServer server = context.getBean(RmiServer.class);
 			LocateRegistry.createRegistry(1099); // RMI 레지스트리 생성
 			Naming.rebind("server", server); // 서버를 RMI 레지스트리에 등록
-			System.out.println("Authentication Server is running...");
-			System.out.println("Student Data Initialization...");
-			server.initializationStudent("Students.txt");
-
-			System.out.println("Course Data Initialization...");
-			server.initializationCourse("Courses.txt");
+			// System.out.println("Authentication Server is running...");
+			// System.out.println("Student Data Initialization...");
+			// server.initializationStudent("Students.txt");
+			//
+			// System.out.println("Course Data Initialization...");
+			// server.initializationCourse("Courses.txt");
 
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:33060/server?rewriteBatchedStatements=true
+    url: jdbc:mysql://localhost:33061/server
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: server

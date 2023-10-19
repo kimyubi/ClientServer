@@ -11,11 +11,12 @@ public class Client2 {
 	public static void main(String[] args) {
 		try {
 			Scanner scanner = new Scanner(System.in);
-			RMIInterface rmiInterface = (RMIInterface) Naming.lookup("rmi://localhost/server");
-			while(true){
-				printMenue();
-				int value = scanner.nextInt();
-				switch (value){
+			RMIInterface rmiInterface = (RMIInterface)Naming.lookup("rmi://localhost/server");
+			printMainMenu();
+			while (true) {
+				int selectedMainMenu = scanner.nextInt();
+
+				switch (selectedMainMenu) {
 					case 0:
 						System.out.println("================  [프로그램을 종료합니다] ================ ");
 						return;
@@ -24,33 +25,6 @@ public class Client2 {
 						break;
 					case 2:
 						logIn(scanner, rmiInterface);
-						break;
-					case 3:
-						printStudentList(rmiInterface);
-						break;
-					case 4:
-						printCourseList(rmiInterface);
-						break;
-					case 5:
-						addStudent(scanner,rmiInterface);
-						break;
-					case 6:
-						deleteStudent(scanner,rmiInterface);
-						break;
-					case 7:
-						addCourse(scanner, rmiInterface);
-						break;
-					case 8:
-						deleteCourse(scanner, rmiInterface);
-						break;
-					case 9:
-						enrolment(scanner, rmiInterface);
-						break;
-					case 10:
-						printEnrolmentByStudentNumber(scanner, rmiInterface);
-						break;
-					default:
-						System.out.println("잘못 입력하셨습니다.");
 						break;
 				}
 			}
@@ -91,7 +65,7 @@ public class Client2 {
 
 	}
 
-	private static void addCourse(Scanner scanner,RMIInterface rmiInterface) throws IOException {
+	private static void addCourse(Scanner scanner, RMIInterface rmiInterface) throws IOException {
 		System.out.println("================ [강의 추가] ================");
 		System.out.println("추가할 강의의 과목 코드를 입력하세요.");
 		String courseNumber = scanner.next();
@@ -107,7 +81,7 @@ public class Client2 {
 
 		List<String> prerequisiteSubjectList = new LinkedList<>();
 		for (int i = 0; i < cnt; i++) {
-			System.out.println("선수 과목 코드 " + (i+1) + ":");
+			System.out.println("선수 과목 코드 " + (i + 1) + ":");
 			prerequisiteSubjectList.add(scanner.next());
 		}
 
@@ -133,7 +107,7 @@ public class Client2 {
 
 		List<String> completedCoursesList = new LinkedList<>();
 		for (int i = 0; i < cnt; i++) {
-			System.out.println("과목 코드 " + (i+1) + ":");
+			System.out.println("과목 코드 " + (i + 1) + ":");
 			completedCoursesList.add(scanner.next());
 		}
 
@@ -155,7 +129,7 @@ public class Client2 {
 	private static void printCourseList(RMIInterface rmiInterface) throws IOException {
 		System.out.println("================ [강의 목록 조회] ================");
 		List<String> courses = rmiInterface.getAllCourses();
-		for(String courseInfo : courses){
+		for (String courseInfo : courses) {
 			System.out.println("==========================================================");
 			System.out.println(courseInfo);
 		}
@@ -164,7 +138,7 @@ public class Client2 {
 	private static void printStudentList(RMIInterface rmiInterface) throws IOException {
 		System.out.println("================ [학생 목록 조회] ================");
 		List<String> students = rmiInterface.getAllStudents();
-		for(String studentInfo : students){
+		for (String studentInfo : students) {
 			System.out.println("==========================================================");
 			System.out.println(studentInfo);
 		}
@@ -195,21 +169,64 @@ public class Client2 {
 
 		String result = rmiInterface.login(id, pwd);
 		System.out.println(result);
+		runSubMenu(scanner, rmiInterface);
 	}
 
-	private static void printMenue() {
-		System.out.println("================ [수강 신청 프로그램] ================");
+	private static void printMainMenu() {
+		System.out.println("================ [수강 신청 프로그램 메인 메뉴] ================");
 		System.out.println("0. 종료");
 		System.out.println("1. 회원 가입");
 		System.out.println("2. 로그인");
-		System.out.println("3. 학생 목록 조회");
-		System.out.println("4. 강의 목록 조회");
-		System.out.println("5. 학생 추가");
-		System.out.println("6. 학생 삭제");
-		System.out.println("7. 강의 추가");
-		System.out.println("8. 강의 삭제");
-		System.out.println("9. 수강 신청");
-		System.out.println("10. 수강 신청 내역 확인");
+	}
 
+	private static void printSubMenu() {
+		System.out.println("\n================ [수강 신청 프로그램 서브 메뉴] ================");
+		System.out.println("1. 학생 목록 조회");
+		System.out.println("2. 강의 목록 조회");
+		System.out.println("3. 학생 추가");
+		System.out.println("4. 학생 삭제");
+		System.out.println("5. 강의 추가");
+		System.out.println("6. 강의 삭제");
+		System.out.println("7. 수강 신청");
+		System.out.println("8. 수강 신청 내역 확인");
+	}
+
+	private static void runSubMenu(Scanner scanner, RMIInterface rmiInterface) throws IOException {
+		while (true) {
+			printSubMenu();
+			int value = scanner.nextInt();
+			switch (value) {
+				case 0:
+					System.out.println("================  [프로그램을 종료합니다] ================ ");
+					return;
+				case 1:
+					printStudentList(rmiInterface);
+					break;
+				case 2:
+					printCourseList(rmiInterface);
+					break;
+				case 3:
+					addStudent(scanner, rmiInterface);
+					break;
+				case 4:
+					deleteStudent(scanner, rmiInterface);
+					break;
+				case 5:
+					addCourse(scanner, rmiInterface);
+					break;
+				case 6:
+					deleteCourse(scanner, rmiInterface);
+					break;
+				case 7:
+					enrolment(scanner, rmiInterface);
+					break;
+				case 8:
+					printEnrolmentByStudentNumber(scanner, rmiInterface);
+					break;
+				default:
+					System.out.println("잘못 입력하셨습니다.");
+					break;
+			}
+		}
 	}
 }
